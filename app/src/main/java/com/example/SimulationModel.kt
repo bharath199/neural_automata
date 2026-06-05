@@ -29,7 +29,8 @@ data class Bot(
     var levelUpThreshold: Double = 50.0,
     var gracePeriod: Int = 0,
     var age: Int = 0,
-    var memories: List<BotMemory> = emptyList()
+    var memories: List<BotMemory> = emptyList(),
+    var totalConsumed: Double = 0.0
 ) {
     val isRevealed: Boolean
         get() = gracePeriod <= 0
@@ -98,5 +99,10 @@ data class SimulationStats(
     val averageIntelligence: Double = 0.0,
     val globalResources: Double = 12000.0,
     val highestIntelligence: Int = 1,
-    val lastHazardEvent: String = "" // Displays recent hazard interactions
+    val lastHazardEvent: String = "", // Displays recent hazard interactions
+    val isFinished: Boolean = false,
+    val posPct: Double = 0.0,
+    val negPct: Double = 0.0,
+    val boxFilledPct: Double = 0.0,
+    val performanceScore: Double = 0.0
 )

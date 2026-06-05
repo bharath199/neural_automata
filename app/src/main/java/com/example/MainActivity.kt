@@ -348,6 +348,158 @@ fun BotSimulationScreen(
             }
         }
     }
+
+    var showDialogLocal by remember { mutableStateOf(true) }
+    LaunchedEffect(stats.isFinished) {
+        if (!stats.isFinished) {
+            showDialogLocal = true
+        }
+    }
+
+    if (stats.isFinished && showDialogLocal) {
+        val dominantCharge = if (stats.posPct > stats.negPct) "POSITIVE" else "NEGATIVE"
+        val dominantColor = if (stats.posPct > stats.negPct) Color(0xFF4FD8EB) else Color(0xFFFF89B5)
+
+        val rankText = when {
+            stats.performanceScore >= 150.0 -> "S"
+            stats.performanceScore >= 50.0 -> "A"
+            stats.performanceScore >= 15.0 -> "B"
+            else -> "C"
+        }
+        val rankColor = when {
+            stats.performanceScore >= 150.0 -> Color(0xFFF1C40F)
+            stats.performanceScore >= 50.0 -> Color(0xFF2ECC71)
+            stats.performanceScore >= 15.0 -> Color(0xFF3498DB)
+            else -> Color(0xFF95A5A6)
+        }
+
+        AlertDialog(
+            onDismissRequest = { showDialogLocal = false },
+            title = {
+                Text(
+                    text = "🏆 Sandbox Mission Met!",
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    color = Color.White
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "The sandbox simulation objective has successfully completed.",
+                        fontSize = 13.sp,
+                        color = Color.LightGray
+                    )
+
+                    HorizontalDivider(color = panelBorder)
+
+                    // Display dominant group
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Dominant Group:", fontSize = 12.sp, color = Color.Gray)
+                        Text("$dominantCharge Charge", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = dominantColor)
+                    }
+
+                    // Display box filling status
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Box Filled Ratio:", fontSize = 12.sp, color = Color.Gray)
+                        Text("${(stats.boxFilledPct * 100).toInt()}%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+
+                    // Duration/Ticks (least time achieves higher performance score)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Time Duration:", fontSize = 12.sp, color = Color.Gray)
+                        Text("${stats.tickCount} Ticks", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+
+                    // Peak Intelligence
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Peak Intelligence:", fontSize = 12.sp, color = Color.Gray)
+                        Text("Level ${stats.highestIntelligence}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD0BCFF))
+                    }
+
+                    // Average Intelligence
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Average Intelligence:", fontSize = 12.sp, color = Color.Gray)
+                        Text(String.format("%.2f", stats.averageIntelligence), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD0BCFF))
+                    }
+
+                    HorizontalDivider(color = panelBorder)
+
+                    // Performance optimization Score!
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("Performance Score:", fontSize = 12.sp, color = Color.Gray)
+                            Text("(Peak Intelligence vs Time)", fontSize = 9.sp, color = Color.DarkGray)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = String.format("%.1f", stats.performanceScore),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(rankColor),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = rankText,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.resetSimulation()
+                        showDialogLocal = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD0BCFF), contentColor = Color.Black)
+                ) {
+                    Text("Restart Sandbox", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialogLocal = false }) {
+                    Text("Inspect Sandbox", color = Color.White)
+                }
+            },
+            containerColor = cardBg,
+            textContentColor = Color.White
+        )
+    }
 }
 
 // Draw the simulation cells
@@ -844,6 +996,90 @@ fun LiveStatsView(
                 accentColor = Color(0xFFD0BCFF),
                 subtitle = "Top Level: ${stats.highestIntelligence}"
             )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StatItemCard(
+                modifier = Modifier.weight(1f),
+                title = "BOX FILLED RATIO",
+                value = "${(stats.boxFilledPct * 100).toInt()}%",
+                accentColor = Color(0xFFFFB74D),
+                subtitle = "Goal: >= 80% filled"
+            )
+            val domPct = maxOf(stats.posPct, stats.negPct)
+            StatItemCard(
+                modifier = Modifier.weight(1f),
+                title = "DOMINANCE",
+                value = "${(domPct * 100).toInt()}%",
+                accentColor = Color(0xFFFF89B5),
+                subtitle = "Goal: > 75% dominance"
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1B24)),
+            border = BorderStroke(1.dp, Color(0xFFD0BCFF).copy(alpha = 0.4f)),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "PERFORMANCE RATING (PEAK INTEL / TIME)",
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.LightGray,
+                        fontFamily = FontFamily.Monospace
+                    )
+                    Text(
+                        text = "Efficiency Score: ${String.format("%.1f", stats.performanceScore)}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                val rankL = when {
+                    stats.performanceScore >= 150.0 -> "S"
+                    stats.performanceScore >= 50.0 -> "A"
+                    stats.performanceScore >= 15.0 -> "B"
+                    else -> "C"
+                }
+                val rankC = when {
+                    stats.performanceScore >= 150.0 -> Color(0xFFF1C40F)
+                    stats.performanceScore >= 50.0 -> Color(0xFF2ECC71)
+                    stats.performanceScore >= 15.0 -> Color(0xFF3498DB)
+                    else -> Color(0xFF95A5A6)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(rankC),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = rankL,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))

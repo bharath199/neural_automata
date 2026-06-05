@@ -69,6 +69,10 @@ class SimulationViewModel : ViewModel() {
     val hazards: StateFlow<List<HazardZone>> = _hazards.asStateFlow()
 
     private var currentHazardEvent = "No hazard anomalies triggered yet."
+    private val crossedMilestones = mutableSetOf<Int>()
+    private val _isFinished = MutableStateFlow(false)
+    val isFinished: StateFlow<Boolean> = _isFinished.asStateFlow()
+
     private var simulationJob: Job? = null
 
     init {
@@ -215,6 +219,8 @@ class SimulationViewModel : ViewModel() {
         _maxResources.value = _initialResources.value
         _globalResources.value = _initialResources.value
         _selectedBotId.value = null
+        crossedMilestones.clear()
+        _isFinished.value = false
 
         val newBots = mutableListOf<Bot>()
         val occupied = mutableSetOf<Pair<Int, Int>>()
@@ -308,6 +314,7 @@ class SimulationViewModel : ViewModel() {
             if (currentResources >= cost) {
                 currentResources -= cost
                 bot.energy += cost + 1.5
+                bot.totalConsumed += cost
                 foragedSuccessfully = true
             }
             bot.energy -= cost
@@ -446,9 +453,33 @@ class SimulationViewModel : ViewModel() {
 
         // 5. Update State
         val finalBots = postDeathList + children
+
+        // Add 10% of deceased bots' total resource consumption back to the pool
+        val deadBots = currentBots.filter { cb -> postDeathList.none { pb -> pb.id == cb.id } }
+        var recycledAmt = 0.0
+        for (db in deadBots) {
+            recycledAmt += db.totalConsumed * 0.10
+        }
+        if (recycledAmt > 0.0) {
+            currentResources = minOf(_maxResources.value, currentResources + recycledAmt)
+        }
+
         _bots.value = finalBots
         _globalResources.value = currentResources
         _tickCount.value += 1
+
+        // Random major movements for environmental hazards (quantum shifts)
+        val updatedHazards = _hazards.value.map { hazard ->
+            if (Random.nextDouble() < 0.05) { // 5% chance of major shift per tick
+                val newX = Random.nextInt(COLS)
+                val newY = Random.nextInt(ROWS)
+                currentHazardEvent = "[Tick ${_tickCount.value}] ⚠️ ${hazard.name} underwent quantum shift to ($newX, $newY)!"
+                hazard.copy(x = newX, y = newY)
+            } else {
+                hazard
+            }
+        }
+        _hazards.value = updatedHazards
 
         recalculateStats()
     }
@@ -604,16 +635,61 @@ class SimulationViewModel : ViewModel() {
         val avgIntel = if (list.isNotEmpty()) list.map { it.intelligence }.average() else 0.0
         val maxIntel = if (list.isNotEmpty()) list.maxOf { it.intelligence } else 1
 
+        val totalBots = list.size
+
+        // 1. Intelligence milestones checking
+        val totalIntel = list.sumOf { it.intelligence }
+        val targetMilestone = if (totalIntel >= 50) (totalIntel / 50) * 50 else 0
+        if (targetMilestone > 0 && targetMilestone !in crossedMilestones) {
+            crossedMilestones.add(targetMilestone)
+            val resourceBonus = targetMilestone * 15.0
+            _globalResources.update { minOf(_maxResources.value, it + resourceBonus) }
+            currentHazardEvent = "[Tick ${_tickCount.value}] Total Intel Milestone reached $targetMilestone! Added ${resourceBonus.toInt()} resources."
+        }
+
+        // 2. Finished checking: one group > 75% of total population AND 80% of box is filled
+        val groupCondition = if (totalBots > 0) {
+            val posCount = list.count { it.charge == Charge.POSITIVE }
+            val negCount = list.count { it.charge == Charge.NEGATIVE }
+            val posFraction = posCount.toDouble() / totalBots
+            val negFraction = negCount.toDouble() / totalBots
+            posFraction > 0.75 || negFraction > 0.75
+        } else false
+
+        val uniqueOccupiedCells = list.map { Pair(it.x, it.y) }.toSet().size
+        val gridFilledRatio = uniqueOccupiedCells.toDouble() / (COLS * ROWS)
+        val boxFilledCondition = gridFilledRatio >= 0.8
+
+        val isCompleted = groupCondition && boxFilledCondition
+
+        if (isCompleted && !_isFinished.value) {
+            _isFinished.value = true
+            pauseSimulation()
+            currentHazardEvent = "[Tick ${_tickCount.value}] Mission Met! Dominant group took over and box is filled!"
+        }
+
+        // 3. Performance Score: higher intelligence and least time (ticks)
+        val perfScore = if (_tickCount.value > 0) {
+            ((maxIntel * 1000.0 + avgIntel * 500.0) / _tickCount.value)
+        } else {
+            0.0
+        }
+
         _stats.value = SimulationStats(
             tickCount = _tickCount.value,
-            totalBots = list.size,
+            totalBots = totalBots,
             positiveCount = pos,
             negativeCount = neg,
             cloakedCount = cloaked,
             averageIntelligence = avgIntel,
             globalResources = _globalResources.value,
             highestIntelligence = maxIntel,
-            lastHazardEvent = currentHazardEvent
+            lastHazardEvent = currentHazardEvent,
+            isFinished = _isFinished.value,
+            posPct = if (totalBots > 0) list.count { it.charge == Charge.POSITIVE }.toDouble() / totalBots else 0.0,
+            negPct = if (totalBots > 0) list.count { it.charge == Charge.NEGATIVE }.toDouble() / totalBots else 0.0,
+            boxFilledPct = gridFilledRatio,
+            performanceScore = perfScore
         )
 
         // Keep selection ID updated (if selected bot died, clear selection)
