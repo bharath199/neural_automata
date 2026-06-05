@@ -40,7 +40,7 @@ class SimulationViewModel : ViewModel() {
     private val _regrowthRate = MutableStateFlow(8.0)
     val regrowthRate: StateFlow<Double> = _regrowthRate.asStateFlow()
 
-    private val _maxResources = MutableStateFlow(50000.0)
+    private val _maxResources = MutableStateFlow(12000.0)
     val maxResources: StateFlow<Double> = _maxResources.asStateFlow()
 
     // Interactive State Variables
@@ -131,7 +131,11 @@ class SimulationViewModel : ViewModel() {
     }
 
     fun setInitialPopulation(num: Int) { _initialPopulation.value = num }
-    fun setInitialResources(res: Double) { _initialResources.value = res }
+    fun setInitialResources(res: Double) {
+        _initialResources.value = res
+        _maxResources.value = res
+        _globalResources.value = res
+    }
     fun setReplicationCost(cost: Double) { _replicationCost.value = cost }
     fun setGracePeriodDuration(dur: Int) { _gracePeriodDuration.value = dur }
     fun setBaseSurvivalCost(cost: Double) { _baseSurvivalCost.value = cost }
@@ -208,6 +212,7 @@ class SimulationViewModel : ViewModel() {
     fun resetSimulation() {
         pauseSimulation()
         _tickCount.value = 0
+        _maxResources.value = _initialResources.value
         _globalResources.value = _initialResources.value
         _selectedBotId.value = null
 
@@ -302,7 +307,7 @@ class SimulationViewModel : ViewModel() {
             var foragedSuccessfully = false
             if (currentResources >= cost) {
                 currentResources -= cost
-                bot.energy += 1.2
+                bot.energy += cost + 1.5
                 foragedSuccessfully = true
             }
             bot.energy -= cost
