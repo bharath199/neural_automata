@@ -1,0 +1,6 @@
+{
+  "name": "Neural Automata",
+  "description": "An interactive elegant dark cellular automata simulation of self-replicating charged bots competing under survival, resource economy, and strategy rules.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

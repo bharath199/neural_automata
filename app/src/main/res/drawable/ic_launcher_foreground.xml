@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer Shield Orbit Circle -->
+    <path
+        android:strokeColor="#24314A"
+        android:strokeWidth="1.5"
+        android:pathData="M 54,16 A 38,38 0 1,1 53.9,16 Z" />
+
+    <!-- Trajectory orbit solid ring -->
+    <path
+        android:strokeColor="#455B80"
+        android:strokeWidth="1.2"
+        android:pathData="M 54,22 A 32,32 0 1,1 53.9,22 Z" />
+
+    <!-- Left Nucleus Core (Negative - Red Core) -->
+    <path
+        android:fillColor="#FF3366"
+        android:pathData="M 40,54 A 10,10 0 1,1 39.9,54 Z" />
+
+    <!-- Right Nucleus Core (Positive - Blue Core) -->
+    <path
+        android:fillColor="#00D2FF"
+        android:pathData="M 68,54 A 10,10 0 1,1 67.9,54 Z" />
+
+    <!-- Highlight core glows -->
+    <path
+        android:strokeColor="#FF3366"
+        android:strokeWidth="2"
+        android:strokeAlpha="0.3"
+        android:pathData="M 40,54 A 14,14 0 1,1 39.9,54 Z" />
+
+    <path
+        android:strokeColor="#00D2FF"
+        android:strokeWidth="2"
+        android:strokeAlpha="0.3"
+        android:pathData="M 68,54 A 14,14 0 1,1 67.9,54 Z" />
+
+    <!-- Plus and Minus Sign inside cores -->
+    <!-- Positive sign inside blue core -->
+    <path
+        android:strokeColor="#0C101B"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M 65,54 L 71,54 M 68,51 L 68,57" />
+
+    <!-- Negative sign inside red core -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M 37,54 L 43,54" />
+</vector>
